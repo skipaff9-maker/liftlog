@@ -4,7 +4,7 @@ A no-fuss gym tracker. Open it, tap **Start**, tap **Log it** for each exercise,
 
 - Free: static files on GitHub Pages, no backend.
 - Works offline once it's loaded.
-- Data stays on your phone. Use **Backup → Export** now and then.
+- Data stays on your phone. Use **Settings → Export backup** now and then.
 
 ## Get it on your phone (about 5 minutes)
 1. Create a GitHub repo (e.g. `liftlog`) and upload these files to the root.

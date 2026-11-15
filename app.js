@@ -118,13 +118,12 @@ function tourRender() {
   const el = step && $(step.el, app); if (!el) return;
   el.classList.add('tour-hl');
   el.scrollIntoView({ block: 'nearest' });
-  const b = el.getBoundingClientRect();
-  app.insertAdjacentHTML('beforeend', `<div class="coach ${b.top + b.height / 2 > innerHeight / 2 ? 'top' : ''}" role="dialog">
+  app.insertAdjacentHTML('beforeend', `<div class="coach" role="dialog" aria-label="Guided tour">
     <p>${step.text}</p>
     <div class="coach-btns"><button class="link" data-act="tourend">End tour</button>${step.ack ? `<button class="sm ok" data-act="tourack" data-id="${step.id}">${step.end ? 'Finish tour' : 'Got it'}</button>` : ''}</div></div>`);
 }
 const nav = h => { location.hash = h; };
-const footer = () => `<nav class="foot"><a href="#/splits">Splits</a><a href="#/history">History</a><a href="#/settings">Backup</a><a href="#/guide">Help</a></nav>`;
+const footer = () => `<nav class="foot"><a href="#/splits">Splits</a><a href="#/history">History</a><a href="#/settings">Settings</a><a href="#/guide">Help</a></nav>`;
 
 /* First-run wizard: #/guide/<step>. Reachable later from the Help link. */
 const GUIDE = [
@@ -163,14 +162,14 @@ const GUIDE = [
   () => `<h1>Let's set up</h1>
     <p>Start from a ready-made <b>Push / Pull / Legs</b> routine and tweak it, or build your own from scratch.</p>
     <p class="muted">Tip: set a sensible <b>Start ${S.unit}</b> per exercise so your first session is right. You can change splits any time under <b>Splits</b>.</p>
-    <p class="muted">Your data only lives on this phone: use <b>Backup</b> to export it now and then.</p>`,
+    <p class="muted">Your data only lives on this phone: use <b>Settings</b> to export it now and then.</p>`,
 ];
 function guide(id) {
   const i = Math.min(Math.max(+id || 0, 0), GUIDE.length - 1);
   const last = i === GUIDE.length - 1;
   const setup = !S.splits.length;
   return `
-    <header class="bar">${i ? `<a href="#/guide/${i - 1}">‹</a>` : '<span></span>'}<span class="dots">${GUIDE.map((_, j) => `<i class="${j === i ? 'on' : ''}"></i>`).join('')}</span><button class="link" data-act="guidedone">${last ? 'Close' : 'Skip'}</button></header>
+    <header class="bar">${i ? `<a href="#/guide/${i - 1}" aria-label="Back">‹</a>` : '<span></span>'}<span class="dots">${GUIDE.map((_, j) => `<i class="${j === i ? 'on' : ''}"></i>`).join('')}</span><button class="link" data-act="guidedone">${last ? 'Close' : 'Skip'}</button></header>
     <div class="guide">${GUIDE[i]()}</div>
     ${!last ? `<button class="big" data-act="go" data-h="#/guide/${i + 1}">Next</button>`
       : setup ? `<button class="big" data-act="guidedone" data-then="example">Load Push / Pull / Legs</button>
@@ -204,13 +203,13 @@ function workout() {
   const a = active(); if (!a) { setTimeout(() => nav('#/'), 0); return ''; }
   const done = a.exercises.filter(e => a.entries[keyOf(e.name)]).length;
   return `
-    <header class="bar"><a href="#/">‹</a><h1>${esc(a.name)}</h1><span class="muted">${done}/${a.exercises.length}</span></header>
+    <header class="bar"><a href="#/" aria-label="Back">‹</a><h1>${esc(a.name)}</h1><span class="muted">${done}/${a.exercises.length}</span></header>
     <div class="list">${a.exercises.map(ex => {
       const logged = a.entries[keyOf(ex.name)];
       const sub = logged ? '✓ ' + fmtSets(logged) : '→ ' + fmtSets(suggest(ex).sets);
       return `<button class="row ${logged ? 'done' : ''}" data-act="go" data-h="#/ex/${ex.id}"><b>${esc(ex.name)}</b><small>${esc(sub)}</small></button>`;
     }).join('')}</div>
-    <button class="big" data-act="finish">Finish workout</button>`;
+    <button class="outline" data-act="finish">Finish workout</button>`;
 }
 
 function exercise(id) {
@@ -221,34 +220,36 @@ function exercise(id) {
   const sets = logged || sg.sets;
   const step = ex.increment || 2.5;
   return `
-    <header class="bar"><a href="#/workout">‹</a><h1>${esc(ex.name)}</h1><span class="muted">${ex.sets}×${ex.repMin}–${ex.repMax}</span></header>
+    <header class="bar"><a href="#/workout" aria-label="Back">‹</a><h1>${esc(ex.name)}</h1><span class="muted">${ex.sets}×${ex.repMin}–${ex.repMax}</span></header>
     ${last ? `<p class="muted">Last (${fmtDate(last.date)}): ${esc(fmtSets(last.sets))}</p>` : ''}
     <p class="why">${esc(sg.why)}</p>
+    <div class="colhead"><span></span><span>${S.unit}</span><span></span><span>Reps</span></div>
     <div id="sets">${sets.map((s, i) => setRow(i, s, step)).join('')}</div>
     <div class="pair"><button class="ghost" data-act="addset">+ Set</button><button class="ghost" data-act="rmset">− Set</button></div>
-    <button class="big" data-act="log" data-id="${ex.id}">${logged ? 'Update' : 'Log it'} ✓</button>`;
+    <button class="big log-btn" data-act="log" data-id="${ex.id}">${logged ? 'Update' : 'Log it'} ✓</button>`;
 }
 function setRow(i, s, step) {
-  return `<div class="set" data-step="${step}"><span class="n">${i + 1}</span>
-    <div class="stp"><button data-act="step" data-d="-${step}" data-f="w">−</button><input class="w" type="number" inputmode="decimal" step="any" value="${s.w}"><button data-act="step" data-d="${step}" data-f="w">+</button></div>
+  const n = i + 1;
+  return `<div class="set" data-step="${step}"><span class="n">${n}</span>
+    <div class="stp"><button data-act="step" data-d="-${step}" data-f="w" aria-label="Set ${n} weight down">−</button><input class="w" type="number" inputmode="decimal" step="any" value="${s.w}" aria-label="Set ${n} weight"><button data-act="step" data-d="${step}" data-f="w" aria-label="Set ${n} weight up">+</button></div>
     <span class="x">×</span>
-    <div class="stp"><button data-act="step" data-d="-1" data-f="r">−</button><input class="r" type="number" inputmode="numeric" value="${s.r}"><button data-act="step" data-d="1" data-f="r">+</button></div></div>`;
+    <div class="stp"><button data-act="step" data-d="-1" data-f="r" aria-label="Set ${n} reps down">−</button><input class="r" type="number" inputmode="numeric" value="${s.r}" aria-label="Set ${n} reps"><button data-act="step" data-d="1" data-f="r" aria-label="Set ${n} reps up">+</button></div></div>`;
 }
 
 function splits() {
   return `
-    <header class="bar"><a href="#/">‹</a><h1>Splits</h1><span></span></header>
+    <header class="bar"><a href="#/" aria-label="Back">‹</a><h1>Splits</h1><span></span></header>
     <p class="muted">Rotation order — the app suggests the next one after whatever you did last.</p>
     <div class="list">${S.splits.map((s, i) => `
       <div class="row edit"><button class="grow" data-act="go" data-h="#/split/${s.id}"><b>${i + 1}. ${esc(s.name)}</b><small>${s.exercises.length} exercises</small></button>
-      <button class="sm" data-act="mv" data-id="${s.id}" data-d="-1">↑</button><button class="sm" data-act="mv" data-id="${s.id}" data-d="1">↓</button></div>`).join('')}</div>
+      <button class="sm" data-act="mv" data-id="${s.id}" data-d="-1" aria-label="Move split up">↑</button><button class="sm" data-act="mv" data-id="${s.id}" data-d="1" aria-label="Move split down">↓</button></div>`).join('')}</div>
     <button class="big" data-act="addsplit">+ Add split</button>`;
 }
 
 function splitEdit(id) {
   const s = splitById(id); if (!s) { setTimeout(() => nav('#/splits'), 0); return ''; }
   return `
-    <header class="bar"><a href="#/splits">‹</a><h1>Edit split</h1><span></span></header>
+    <header class="bar"><a href="#/splits" aria-label="Back">‹</a><h1>Edit split</h1><span></span></header>
     <label>Name<input data-sf="name" value="${esc(s.name)}"></label>
     ${s.exercises.map((e, i) => `
       <fieldset data-i="${i}">
@@ -260,7 +261,7 @@ function splitEdit(id) {
           <label>+${S.unit} step<input data-ef="increment" type="number" inputmode="decimal" step="any" value="${e.increment}"></label>
           <label>Start ${S.unit}<input data-ef="startWeight" type="number" inputmode="decimal" step="any" value="${e.startWeight}"></label>
         </div>
-        <div class="pair"><button class="sm" data-act="exmv" data-i="${i}" data-d="-1">↑</button><button class="sm" data-act="exmv" data-i="${i}" data-d="1">↓</button><button class="sm danger" data-act="exrm" data-i="${i}">Remove</button></div>
+        <div class="pair"><button class="sm" data-act="exmv" data-i="${i}" data-d="-1" aria-label="Move exercise up">↑</button><button class="sm" data-act="exmv" data-i="${i}" data-d="1" aria-label="Move exercise down">↓</button><button class="sm danger" data-act="exrm" data-i="${i}">Remove</button></div>
       </fieldset>`).join('')}
     <button class="big" data-act="addex" data-id="${s.id}">+ Add exercise</button>
     <button class="ghost danger" data-act="rmsplit" data-id="${s.id}">Delete split</button>`;
@@ -269,7 +270,7 @@ function splitEdit(id) {
 function history() {
   const f = finished();
   return `
-    <header class="bar"><a href="#/">‹</a><h1>History</h1><span></span></header>
+    <header class="bar"><a href="#/" aria-label="Back">‹</a><h1>History</h1><span></span></header>
     ${f.length ? f.map(s => `<div class="card"><b>${esc(s.name)}</b> <span class="muted">${fmtDate(s.date)}</span>
       <ul>${Object.entries(s.entries).map(([k, v]) => `<li>${esc((s.exercises.find(e => keyOf(e.name) === k) || { name: k }).name)}: ${esc(fmtSets(v))}</li>`).join('')}</ul>
       <button class="sm danger" data-act="rmsession" data-id="${s.id}">Delete</button></div>`).join('') : '<p class="muted">Nothing logged yet.</p>'}`;
@@ -277,7 +278,7 @@ function history() {
 
 function settings() {
   return `
-    <header class="bar"><a href="#/">‹</a><h1>Backup</h1><span></span></header>
+    <header class="bar"><a href="#/" aria-label="Back">‹</a><h1>Settings</h1><span></span></header>
     <p class="muted">Everything lives on this phone only. Export now and then so a cleared browser doesn't lose your history.</p>
     <button class="big" data-act="export">Export backup (.json)</button>
     <label class="ghost filebtn">Import backup<input type="file" accept="application/json" data-act-change="import" hidden></label>
@@ -321,7 +322,12 @@ const actions = {
   rmset() { const r = $$('#sets .set'); if (r.length > 1) r[r.length - 1].remove(); },
   log(d) {
     const a = active(); const ex = a.exercises.find(e => e.id === d.id);
-    a.entries[keyOf(ex.name)] = readSets(); save();
+    const sets = readSets();
+    // first time with no start weight set: stop a silent 0 kg log (bodyweight moves still allowed)
+    if (!lastSets(ex.name) && sets.some(s => s.w === 0) && !confirm(`Log ${ex.name} at 0${S.unit}? Set your starting weight first if this isn't bodyweight.`)) return;
+    a.entries[keyOf(ex.name)] = sets; save();
+    flash(`${ex.name} logged ✓`);
+    navigator.vibrate?.(20);
     // straight on to the next unlogged exercise, else back to the list
     const next = a.exercises.find(e => !a.entries[keyOf(e.name)]);
     nav(next ? '#/ex/' + next.id : '#/workout');
@@ -339,7 +345,7 @@ const actions = {
   mv(d) { const i = S.splits.findIndex(s => s.id === d.id), j = i + +d.d; if (j < 0 || j >= S.splits.length) return; [S.splits[i], S.splits[j]] = [S.splits[j], S.splits[i]]; save(); render(); },
   rmsplit(d) { if (!confirm('Delete this split? History is kept.')) return; S.splits = S.splits.filter(s => s.id !== d.id); save(); nav('#/splits'); },
   addex(d) { splitById(d.id).exercises.push(newEx()); save(); render(); },
-  exrm(d) { const s = curSplit(); s.exercises.splice(+d.i, 1); save(); render(); },
+  exrm(d) { if (!confirm('Remove this exercise from the split? History is kept.')) return; const s = curSplit(); s.exercises.splice(+d.i, 1); save(); render(); },
   exmv(d) { const s = curSplit(), i = +d.i, j = i + +d.d; if (j < 0 || j >= s.exercises.length) return; [s.exercises[i], s.exercises[j]] = [s.exercises[j], s.exercises[i]]; save(); render(); },
   rmsession(d) { if (!confirm('Delete this workout from history?')) return; S.sessions = S.sessions.filter(s => s.id !== d.id); save(); render(); },
   export() {
@@ -350,6 +356,12 @@ const actions = {
   wipe() { if (!confirm('Erase ALL splits and history on this phone?')) return; S = blank(); save(); nav('#/'); },
 };
 const curSplit = () => splitById(location.hash.split('/')[2]);
+// short confirmation that lives outside #app, so it survives the screen change after logging
+function flash(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+  document.body.append(t); setTimeout(() => t.remove(), 1600);
+}
 
 app.addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b) return;

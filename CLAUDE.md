@@ -14,7 +14,7 @@ Personal workout tracker for one user (Karl). The guiding principle: **the fewes
 |---|---|
 | `index.html` | Shell. Loads `styles.css` and `app.js`. |
 | `app.js` | All logic: state, routing (hash-based), views (template strings), actions (event delegation via `data-act`). |
-| `styles.css` | All styling. The current look is a placeholder until the Claude Design work comes back (see `docs/claude-design-brief.md`). |
+| `styles.css` | All styling. "Direction A" (chalk background, brick accent, Barlow fonts). Tokens are at the top of the file. Fonts are self-hosted in `fonts/` so they work offline. |
 | `sw.js` | Service worker. **Bump `CACHE` version on every change** or phones keep the old version. |
 | `manifest.json`, `icon.svg` | PWA install metadata. |
 
