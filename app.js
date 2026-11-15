@@ -69,17 +69,62 @@ const fmtSets = sets => {
 
 /* ---------- views ---------- */
 function render() {
-  let [, route = '', id] = location.hash.split('/');
-  if (route === '' && isFirstRun()) route = 'guide'; // brand-new phone: walk them through it once
+  const [, route = '', id] = location.hash.split('/');
   const v = { '': home, workout, ex: exercise, splits, split: splitEdit, history, settings, guide }[route] || home;
   app.innerHTML = v(id);
   window.scrollTo(0, 0);
+  tourRender();
+}
+
+/* ---------- guided tour ----------
+   Coach marks on the real screens: highlights the thing to tap and explains it.
+   "do" steps vanish once you do the action (their `when` stops being true);
+   "ack" steps have a Got it button. State: S.tour = { acks: [], finished } or null. */
+const routeNow = () => location.hash.split('/')[1] || '';
+const logged = () => Object.keys(active()?.entries || {}).length;
+const exNow = () => active()?.exercises.find(e => e.id === location.hash.split('/')[2]);
+const TOUR = [
+  { id: 'setup', route: '', when: () => !S.splits.length, el: '[data-tour=setup]',
+    text: `<b>Quick tour:</b> I'll point at what to tap as you go. First you need your training days (<b>splits</b>). Quickest: load the ready-made Push / Pull / Legs and tweak it later. Or tap <b>Set up your splits</b> to build your own.` },
+  { id: 'addsplit', route: 'splits', when: () => !S.splits.length, el: '[data-act=addsplit]',
+    text: `A split is one training day, e.g. <i>Push</i> or <i>Legs</i>. Tap <b>+ Add split</b> to make your first.` },
+  { id: 'splitfields', route: 'split', ack: true, el: 'fieldset',
+    text: `Name the day at the top, then fill in each exercise:<br><b>Sets</b> and <b>Reps min–max</b> (your rep range).<br><b>+${S.unit} step</b>: added when you hit max reps on every set.<br><b>Start ${S.unit}</b>: weight for your first session.<br>Everything saves as you type.` },
+  { id: 'splitback', route: 'split', ack: true, el: '.bar a',
+    text: `Use <b>+ Add exercise</b> for the rest of this day. When it's done, tap <b>‹</b> to go back and add your other days.` },
+  { id: 'splits', route: 'splits', ack: true, when: () => S.splits.length, el: '.list',
+    text: `Splits run in this order, on rotation. Reorder with ↑ ↓, tap one to edit it. When you've added all your days, tap <b>‹</b>.` },
+  { id: 'start', route: '', when: () => S.splits.length && !active() && !S.tour.finished, el: '[data-act=start]',
+    get text() { return `This is your next workout. LiftLog rotates through your splits for you${S.splits.length > 1 ? ', and you can pick a different one below' : ''}. In the gym, just tap <b>Start</b>. Try it now.`; } },
+  { id: 'resume', route: '', when: () => active(), el: '[data-act=go]', text: `You've got a workout going. Tap <b>Resume</b> to carry on.` },
+  { id: 'list', route: 'workout', when: () => !logged(), el: '.list .row',
+    text: `Here are today's exercises. <b>→</b> is your target. Tap one to log it.` },
+  { id: 'sets', route: 'ex', ack: true, when: () => !logged(), el: '#sets',
+    text: `Each row is one set: <b>weight × reps</b>, already filled in with your target. First time? Set your real weight with <b>−</b> / <b>+</b>. Next time it's remembered.` },
+  { id: 'log', route: 'ex', when: () => !logged(), el: '[data-act=log]',
+    text: `Done the sets? Tap <b>Log it</b>. If you did something different, change the numbers first.` },
+  { id: 'next', route: 'ex', ack: true, when: () => logged() && !active().entries[keyOf(exNow()?.name)], el: '.bar h1',
+    text: `Logged. It jumped straight to the next exercise, so in the gym it's just <b>Log it</b>, <b>Log it</b>, <b>Log it</b>. Tap <b>‹</b> to see the list any time.` },
+  { id: 'finish', route: 'workout', when: () => logged(), el: '[data-act=finish]',
+    text: `✓ = logged. When you're done (skipping some is fine), tap <b>Finish workout</b>.` },
+  { id: 'done', route: '', ack: true, end: true, when: () => S.tour.finished && !active(), el: '[data-act=start]',
+    text: `That's the whole loop. Next time it suggests this split, and your targets go up as you hit them. Help in the footer has the details.` },
+];
+function tourRender() {
+  $('.coach')?.remove(); $('.tour-hl')?.classList.remove('tour-hl');
+  if (!S.tour) return;
+  const r = routeNow();
+  const step = TOUR.find(s => s.route === r && !S.tour.acks.includes(s.id) && (!s.when || s.when()));
+  const el = step && $(step.el, app); if (!el) return;
+  el.classList.add('tour-hl');
+  el.scrollIntoView({ block: 'nearest' });
+  const b = el.getBoundingClientRect();
+  app.insertAdjacentHTML('beforeend', `<div class="coach ${b.top + b.height / 2 > innerHeight / 2 ? 'top' : ''}" role="dialog">
+    <p>${step.text}</p>
+    <div class="coach-btns"><button class="link" data-act="tourend">End tour</button>${step.ack ? `<button class="sm ok" data-act="tourack" data-id="${step.id}">${step.end ? 'Finish tour' : 'Got it'}</button>` : ''}</div></div>`);
 }
 const nav = h => { location.hash = h; };
 const footer = () => `<nav class="foot"><a href="#/splits">Splits</a><a href="#/history">History</a><a href="#/settings">Backup</a><a href="#/guide">Help</a></nav>`;
-const isFirstRun = () => !S.introSeen && !S.splits.length && !S.sessions.length;
-// One-time hints shown until the first workout is finished; they need no tap to dismiss.
-const tip = html => finished().length ? '' : `<p class="tip">${html}</p>`;
 
 /* First-run wizard: #/guide/<step>. Reachable later from the Help link. */
 const GUIDE = [
@@ -130,7 +175,8 @@ function guide(id) {
     ${!last ? `<button class="big" data-act="go" data-h="#/guide/${i + 1}">Next</button>`
       : setup ? `<button class="big" data-act="guidedone" data-then="example">Load Push / Pull / Legs</button>
                  <button class="ghost" data-act="guidedone" data-then="own">Build my own splits</button>`
-      : `<button class="big" data-act="guidedone">Got it</button>`}`;
+      : `<button class="big" data-act="guidedone">Got it</button>`}
+    ${last ? `<button class="ghost" data-act="guidedone" data-then="tour">Show me on the real screens (guided tour)</button>` : ''}`;
 }
 
 function home() {
@@ -141,8 +187,8 @@ function home() {
     <button class="ghost" data-act="discard">Discard workout</button>${footer()}`;
   if (!S.splits.length) return `
     <h1>LiftLog</h1><p class="muted">No splits yet.</p>
-    <button class="big" data-act="go" data-h="#/splits">Set up your splits</button>
-    <button class="ghost" data-act="example">Load example (Push / Pull / Legs)</button>${footer()}`;
+    <div data-tour="setup"><button class="big" data-act="go" data-h="#/splits">Set up your splits</button>
+    <button class="ghost" data-act="example">Load example (Push / Pull / Legs)</button></div>${footer()}`;
   const nx = nextSplit();
   const others = S.splits.filter(s => s.id !== nx.id);
   const last = finished()[0];
@@ -159,7 +205,6 @@ function workout() {
   const done = a.exercises.filter(e => a.entries[keyOf(e.name)]).length;
   return `
     <header class="bar"><a href="#/">‹</a><h1>${esc(a.name)}</h1><span class="muted">${done}/${a.exercises.length}</span></header>
-    ${tip(done ? '✓ = logged. Tap any exercise to change it. Tap <b>Finish workout</b> when you\'re done.' : 'Tap an exercise to log it. → shows today\'s target.')}
     <div class="list">${a.exercises.map(ex => {
       const logged = a.entries[keyOf(ex.name)];
       const sub = logged ? '✓ ' + fmtSets(logged) : '→ ' + fmtSets(suggest(ex).sets);
@@ -179,7 +224,6 @@ function exercise(id) {
     <header class="bar"><a href="#/workout">‹</a><h1>${esc(ex.name)}</h1><span class="muted">${ex.sets}×${ex.repMin}–${ex.repMax}</span></header>
     ${last ? `<p class="muted">Last (${fmtDate(last.date)}): ${esc(fmtSets(last.sets))}</p>` : ''}
     <p class="why">${esc(sg.why)}</p>
-    ${tip('Each row is one set: <b>weight × reps</b>. Did exactly this? Tap <b>Log it</b>. Different? Adjust with − / + first.')}
     <div id="sets">${sets.map((s, i) => setRow(i, s, step)).join('')}</div>
     <div class="pair"><button class="ghost" data-act="addset">+ Set</button><button class="ghost" data-act="rmset">− Set</button></div>
     <button class="big" data-act="log" data-id="${ex.id}">${logged ? 'Update' : 'Log it'} ✓</button>`;
@@ -205,7 +249,6 @@ function splitEdit(id) {
   const s = splitById(id); if (!s) { setTimeout(() => nav('#/splits'), 0); return ''; }
   return `
     <header class="bar"><a href="#/splits">‹</a><h1>Edit split</h1><span></span></header>
-    ${tip(`Changes save as you type. <b>Reps min–max</b> is your rep range; hit max on every set and the weight goes up by <b>+${S.unit} step</b>. <b>Start ${S.unit}</b> is your first-session weight.`)}
     <label>Name<input data-sf="name" value="${esc(s.name)}"></label>
     ${s.exercises.map((e, i) => `
       <fieldset data-i="${i}">
@@ -252,8 +295,12 @@ const actions = {
     S.introSeen = true; save();
     if (d.then === 'example') return actions.example(), nav('#/');
     if (d.then === 'own') return actions.addsplit();
-    location.hash === '#/' ? render() : nav('#/');
+    if (d.then === 'tour') S.tour = { acks: [] }, save();
+    location.hash === '#/' || location.hash === '' ? render() : nav('#/');
   },
+  // ack only redraws the coach mark: a full render would wipe numbers typed into the steppers
+  tourack(d) { if (TOUR.find(s => s.id === d.id)?.end) S.tour = null; else S.tour.acks.push(d.id); save(); tourRender(); },
+  tourend() { S.tour = null; save(); tourRender(); },
   start(d) {
     const sp = splitById(d.id);
     const s = { id: uid(), splitId: sp.id, name: sp.name, date: new Date().toISOString(), done: false, exercises: structuredClone(sp.exercises), entries: {} };
@@ -263,7 +310,7 @@ const actions = {
   finish() {
     const a = active();
     if (!Object.keys(a.entries).length) { if (!confirm('Nothing logged — discard workout?')) return; S.sessions = S.sessions.filter(s => s.id !== a.id); }
-    else { a.done = true; a.date = new Date().toISOString(); }
+    else { a.done = true; a.date = new Date().toISOString(); if (S.tour) S.tour.finished = true; }
     S.activeId = null; save(); nav('#/');
   },
   step(d, b) {
@@ -331,6 +378,8 @@ app.addEventListener('change', e => {
 });
 
 window.addEventListener('hashchange', render);
+// Brand-new phone: start the guided tour on the real screens.
+if (!S.introSeen && !S.splits.length && !S.sessions.length) { S.introSeen = true; S.tour = { acks: [] }; save(); }
 render();
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');

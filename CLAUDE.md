@@ -26,7 +26,8 @@ Personal workout tracker for one user (Karl). The guiding principle: **the fewes
   splits: [ { id, name, exercises: [ { id, name, sets, repMin, repMax, increment, startWeight } ] } ], // array order = rotation order
   sessions: [ { id, splitId, name, date /*ISO*/, done, exercises /*snapshot of split at start*/, entries: { [exerciseNameLowercase]: [ { w, r } ] } } ],
   activeId: sessionId | null,
-  introSeen: true | undefined // first-run guide dismissed (optional; missing = not seen)
+  introSeen: true | undefined, // first-run handled (optional)
+  tour: { acks: [stepId], finished } | null | undefined // guided tour progress (optional)
 }
 ```
 - History is keyed by **exercise name (lowercased)**, not id, so the same lift in two splits shares progression history.

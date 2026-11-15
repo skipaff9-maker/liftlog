@@ -1,5 +1,5 @@
 // Bump CACHE on every deploy so phones pick up the new version.
-const CACHE = 'liftlog-v2';
+const CACHE = 'liftlog-v3';
 const FILES = ['./', 'index.html', 'app.js', 'styles.css', 'manifest.json', 'icon.svg'];
 
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });
