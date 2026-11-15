@@ -1,0 +1,43 @@
+/* Placeholder styling — to be replaced with the Claude Design output. Keep class names stable or update app.js too. */
+:root { --bg:#111; --fg:#f2f2f2; --muted:#8a8a8a; --card:#1c1c1c; --line:#2c2c2c; --accent:#c6ff3d; --accent-fg:#111; --danger:#ff5c5c; --r:14px; }
+* { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body { margin:0; background:var(--bg); color:var(--fg); font:17px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+#app { max-width:520px; margin:0 auto; padding:max(16px,env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom)); }
+h1 { font-size:1.4rem; margin:.4rem 0 .8rem; }
+.muted { color:var(--muted); font-size:.9rem; margin:.4rem 0; }
+.why { color:var(--accent); font-size:.9rem; margin:.2rem 0 1rem; }
+a { color:var(--fg); }
+button,.filebtn { font:inherit; color:var(--fg); background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:14px 16px; width:100%; text-align:left; cursor:pointer; display:block; }
+button:active { transform:scale(.98); }
+.big { background:var(--accent); color:var(--accent-fg); border:0; font-weight:700; font-size:1.15rem; padding:20px; text-align:center; margin:12px 0; }
+.ghost,.filebtn { background:transparent; text-align:center; margin:8px 0; }
+.danger { color:var(--danger); }
+.sm { width:auto; padding:10px 14px; text-align:center; }
+.list { display:grid; gap:8px; margin:8px 0; }
+.row { display:flex; flex-direction:column; gap:2px; }
+.row small { color:var(--muted); }
+.row.done { border-color:var(--accent); }
+.row.done small { color:var(--accent); }
+.row.edit { flex-direction:row; align-items:stretch; gap:6px; padding:0; border:0; }
+.grow { flex:1; display:flex; flex-direction:column; }
+.bar { display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+.bar a { text-decoration:none; font-size:2rem; line-height:1; padding:0 8px 0 0; }
+.bar h1 { flex:1; margin:0; font-size:1.2rem; }
+.set { display:flex; align-items:center; gap:6px; margin:10px 0; }
+.set .n { width:1.2em; color:var(--muted); }
+.set .x { color:var(--muted); }
+.stp { display:flex; flex:1; align-items:center; background:var(--card); border:1px solid var(--line); border-radius:var(--r); }
+.stp button { width:42px; flex:none; height:52px; padding:0; text-align:center; border:0; background:none; font-size:1.4rem; }
+.stp:first-of-type { flex:1.5; }
+.stp input { flex:1; min-width:0; text-align:center; background:none; border:0; color:var(--fg); font:600 1.2rem system-ui; }
+.pair { display:flex; gap:8px; }
+.pair button { flex:1; text-align:center; }
+.foot { display:flex; justify-content:space-around; margin-top:32px; }
+.foot a { color:var(--muted); text-decoration:none; padding:12px; }
+label { display:block; color:var(--muted); font-size:.85rem; margin:10px 0; }
+input,select { display:block; width:100%; margin-top:4px; padding:12px; font:inherit; color:var(--fg); background:var(--card); border:1px solid var(--line); border-radius:10px; }
+fieldset { border:1px solid var(--line); border-radius:var(--r); margin:12px 0; padding:4px 12px 12px; }
+.grid { display:grid; grid-template-columns:repeat(3,1fr); gap:0 8px; }
+.card { background:var(--card); border-radius:var(--r); padding:12px 14px; margin:8px 0; }
+.card ul { margin:6px 0 10px; padding-left:18px; color:var(--muted); font-size:.9rem; }
+input[type=number]::-webkit-inner-spin-button { -webkit-appearance:none; }
