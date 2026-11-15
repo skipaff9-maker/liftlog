@@ -41,3 +41,21 @@ fieldset { border:1px solid var(--line); border-radius:var(--r); margin:12px 0; 
 .card { background:var(--card); border-radius:var(--r); padding:12px 14px; margin:8px 0; }
 .card ul { margin:6px 0 10px; padding-left:18px; color:var(--muted); font-size:.9rem; }
 input[type=number]::-webkit-inner-spin-button { -webkit-appearance:none; }
+/* first-run guide + one-time tips */
+.link { width:auto; min-height:48px; background:none; border:0; color:var(--muted); padding:12px 4px 12px 12px; text-align:right; }
+.dots { flex:1; display:flex; justify-content:center; gap:6px; }
+.dots i { width:8px; height:8px; border-radius:50%; background:var(--line); }
+.dots i.on { background:var(--accent); }
+.guide { min-height:52vh; }
+.guide p { margin:.6rem 0; }
+.steps { padding-left:1.3em; margin:.8rem 0; }
+.steps li { margin:.5rem 0; }
+.defs { display:grid; grid-template-columns:auto 1fr; gap:6px 12px; background:var(--card); border-radius:var(--r); padding:12px 14px; margin:.8rem 0; font-size:.95rem; }
+.defs dt { font-weight:700; }
+.defs dd { margin:0; color:var(--muted); }
+.prog { width:100%; border-collapse:collapse; background:var(--card); border-radius:var(--r); overflow:hidden; margin:.8rem 0; font-size:.95rem; }
+.prog th,.prog td { text-align:left; padding:8px 14px; border-bottom:1px solid var(--line); }
+.prog th { color:var(--muted); font-weight:400; font-size:.85rem; }
+.prog tr:last-child td { border-bottom:0; }
+.prog .up td { color:var(--accent); font-weight:700; }
+.tip { background:var(--card); border-left:3px solid var(--accent); border-radius:8px; padding:10px 12px; margin:8px 0 12px; font-size:.9rem; color:var(--fg); }

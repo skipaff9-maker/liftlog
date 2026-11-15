@@ -69,13 +69,69 @@ const fmtSets = sets => {
 
 /* ---------- views ---------- */
 function render() {
-  const [, route = '', id] = location.hash.split('/');
-  const v = { '': home, workout, ex: exercise, splits, split: splitEdit, history, settings }[route] || home;
+  let [, route = '', id] = location.hash.split('/');
+  if (route === '' && isFirstRun()) route = 'guide'; // brand-new phone: walk them through it once
+  const v = { '': home, workout, ex: exercise, splits, split: splitEdit, history, settings, guide }[route] || home;
   app.innerHTML = v(id);
   window.scrollTo(0, 0);
 }
 const nav = h => { location.hash = h; };
-const footer = () => `<nav class="foot"><a href="#/splits">Splits</a><a href="#/history">History</a><a href="#/settings">Backup</a></nav>`;
+const footer = () => `<nav class="foot"><a href="#/splits">Splits</a><a href="#/history">History</a><a href="#/settings">Backup</a><a href="#/guide">Help</a></nav>`;
+const isFirstRun = () => !S.introSeen && !S.splits.length && !S.sessions.length;
+// One-time hints shown until the first workout is finished; they need no tap to dismiss.
+const tip = html => finished().length ? '' : `<p class="tip">${html}</p>`;
+
+/* First-run wizard: #/guide/<step>. Reachable later from the Help link. */
+const GUIDE = [
+  () => `<h1>Welcome to LiftLog</h1>
+    <p>Built for one thing: <b>log your workout in as few taps as possible</b>, then get off your phone.</p>
+    <ol class="steps"><li>Set up your <b>splits</b> once (your training days).</li><li>In the gym, tap <b>Start</b>.</li><li>For each exercise, tap <b>Log it</b>.</li><li>Tap <b>Finish</b>.</li></ol>
+    <p class="muted">Everything stays on this phone and works with no signal.</p>`,
+  () => `<h1>1 · Splits</h1>
+    <p>A <b>split</b> is one training day, e.g. <i>Push</i>, <i>Pull</i>, <i>Legs</i>. They run in a rotation: LiftLog always suggests the one after the split you did last.</p>
+    <p>Each exercise in a split has:</p>
+    <dl class="defs">
+      <dt>Sets</dt><dd>How many working sets, e.g. 3.</dd>
+      <dt>Reps min–max</dt><dd>Your rep range, e.g. 8–12.</dd>
+      <dt>+${S.unit} step</dt><dd>How much to add when you go up, e.g. 2.5.</dd>
+      <dt>Start ${S.unit}</dt><dd>The weight for your very first session.</dd>
+    </dl>
+    <p class="muted">Same exercise name in two splits = shared history.</p>`,
+  () => `<h1>2 · How it picks your numbers</h1>
+    <p>Every exercise is pre-filled with a suggestion based on last time:</p>
+    <table class="prog"><tr><th>Session</th><th>Suggested</th></tr>
+      <tr><td>1</td><td>40${S.unit} × 8, 8, 8</td></tr>
+      <tr><td>2</td><td>40${S.unit} × 9, 9, 9</td></tr>
+      <tr><td>…</td><td>+1 rep each time</td></tr>
+      <tr><td>5</td><td>40${S.unit} × 12, 12, 12</td></tr>
+      <tr class="up"><td>6</td><td>42.5${S.unit} × 8, 8, 8</td></tr></table>
+    <p>Hit the top of the range on <b>every</b> set → weight goes up, reps reset. Miss it → same weight, aim for one more rep.</p>`,
+  () => `<h1>3 · In the gym</h1>
+    <ol class="steps">
+      <li>Open the app and tap <b>Start</b>. Your next split is already chosen.</li>
+      <li>It opens the list of exercises. Tap one: it's pre-filled with today's target.</li>
+      <li>Did exactly that? Tap <b>Log it ✓</b>. It jumps straight to the next exercise.</li>
+      <li>Did something different? Fix it with <b>− / +</b> (or <b>+ Set / − Set</b>) first, then Log it.</li>
+      <li>Tap <b>Finish workout</b> when done.</li>
+    </ol>
+    <p class="muted">Closed the app mid-workout? It's saved: tap Resume.</p>`,
+  () => `<h1>Let's set up</h1>
+    <p>Start from a ready-made <b>Push / Pull / Legs</b> routine and tweak it, or build your own from scratch.</p>
+    <p class="muted">Tip: set a sensible <b>Start ${S.unit}</b> per exercise so your first session is right. You can change splits any time under <b>Splits</b>.</p>
+    <p class="muted">Your data only lives on this phone: use <b>Backup</b> to export it now and then.</p>`,
+];
+function guide(id) {
+  const i = Math.min(Math.max(+id || 0, 0), GUIDE.length - 1);
+  const last = i === GUIDE.length - 1;
+  const setup = !S.splits.length;
+  return `
+    <header class="bar">${i ? `<a href="#/guide/${i - 1}">‹</a>` : '<span></span>'}<span class="dots">${GUIDE.map((_, j) => `<i class="${j === i ? 'on' : ''}"></i>`).join('')}</span><button class="link" data-act="guidedone">${last ? 'Close' : 'Skip'}</button></header>
+    <div class="guide">${GUIDE[i]()}</div>
+    ${!last ? `<button class="big" data-act="go" data-h="#/guide/${i + 1}">Next</button>`
+      : setup ? `<button class="big" data-act="guidedone" data-then="example">Load Push / Pull / Legs</button>
+                 <button class="ghost" data-act="guidedone" data-then="own">Build my own splits</button>`
+      : `<button class="big" data-act="guidedone">Got it</button>`}`;
+}
 
 function home() {
   const a = active();
@@ -103,6 +159,7 @@ function workout() {
   const done = a.exercises.filter(e => a.entries[keyOf(e.name)]).length;
   return `
     <header class="bar"><a href="#/">‹</a><h1>${esc(a.name)}</h1><span class="muted">${done}/${a.exercises.length}</span></header>
+    ${tip(done ? '✓ = logged. Tap any exercise to change it. Tap <b>Finish workout</b> when you\'re done.' : 'Tap an exercise to log it. → shows today\'s target.')}
     <div class="list">${a.exercises.map(ex => {
       const logged = a.entries[keyOf(ex.name)];
       const sub = logged ? '✓ ' + fmtSets(logged) : '→ ' + fmtSets(suggest(ex).sets);
@@ -122,6 +179,7 @@ function exercise(id) {
     <header class="bar"><a href="#/workout">‹</a><h1>${esc(ex.name)}</h1><span class="muted">${ex.sets}×${ex.repMin}–${ex.repMax}</span></header>
     ${last ? `<p class="muted">Last (${fmtDate(last.date)}): ${esc(fmtSets(last.sets))}</p>` : ''}
     <p class="why">${esc(sg.why)}</p>
+    ${tip('Each row is one set: <b>weight × reps</b>. Did exactly this? Tap <b>Log it</b>. Different? Adjust with − / + first.')}
     <div id="sets">${sets.map((s, i) => setRow(i, s, step)).join('')}</div>
     <div class="pair"><button class="ghost" data-act="addset">+ Set</button><button class="ghost" data-act="rmset">− Set</button></div>
     <button class="big" data-act="log" data-id="${ex.id}">${logged ? 'Update' : 'Log it'} ✓</button>`;
@@ -147,6 +205,7 @@ function splitEdit(id) {
   const s = splitById(id); if (!s) { setTimeout(() => nav('#/splits'), 0); return ''; }
   return `
     <header class="bar"><a href="#/splits">‹</a><h1>Edit split</h1><span></span></header>
+    ${tip(`Changes save as you type. <b>Reps min–max</b> is your rep range; hit max on every set and the weight goes up by <b>+${S.unit} step</b>. <b>Start ${S.unit}</b> is your first-session weight.`)}
     <label>Name<input data-sf="name" value="${esc(s.name)}"></label>
     ${s.exercises.map((e, i) => `
       <fieldset data-i="${i}">
@@ -189,6 +248,12 @@ const readSets = () => $$('#sets .set').map(r => ({ w: round(+$('.w', r).value |
 
 const actions = {
   go: d => nav(d.h),
+  guidedone(d) {
+    S.introSeen = true; save();
+    if (d.then === 'example') return actions.example(), nav('#/');
+    if (d.then === 'own') return actions.addsplit();
+    location.hash === '#/' ? render() : nav('#/');
+  },
   start(d) {
     const sp = splitById(d.id);
     const s = { id: uid(), splitId: sp.id, name: sp.name, date: new Date().toISOString(), done: false, exercises: structuredClone(sp.exercises), entries: {} };
