@@ -176,7 +176,7 @@ function guide(id) {
       : setup ? `<button class="big" data-act="guidedone" data-then="example">Load Push / Pull / Legs</button>
                  <button class="ghost" data-act="guidedone" data-then="own">Build my own splits</button>`
       : `<button class="big" data-act="guidedone">Got it</button>`}
-    ${last ? `<button class="ghost" data-act="guidedone" data-then="tour">Show me on the real screens (guided tour)</button>` : ''}`;
+    ${i === 0 || last ? `<button class="ghost" data-act="guidedone" data-then="tour">Take the guided tour</button>` : ''}`;
 }
 
 function home() {
