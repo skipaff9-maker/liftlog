@@ -117,10 +117,16 @@ function tourRender() {
   const step = TOUR.find(s => s.route === r && !S.tour.acks.includes(s.id) && (!s.when || s.when()));
   const el = step && $(step.el, app); if (!el) return;
   el.classList.add('tour-hl');
-  el.scrollIntoView({ block: 'nearest' });
-  app.insertAdjacentHTML('beforeend', `<div class="coach" role="dialog" aria-label="Guided tour">
+  // The card goes into the page flow next to the target (never floating over it), so it can't cover any button.
+  // Usually right after the target's top-level block; before it if the target sits at the top of a tall block (e.g. first row of a list).
+  let block = el; while (block.parentElement !== app) block = block.parentElement;
+  const tall = block !== el && block.offsetHeight > innerHeight * 0.3 && el.offsetTop - block.offsetTop < block.offsetHeight / 2;
+  block.insertAdjacentHTML(tall ? 'beforebegin' : 'afterend', `<div class="coach" role="dialog" aria-label="Guided tour">
     <p>${step.text}</p>
     <div class="coach-btns"><button class="link" data-act="tourend">End tour</button>${step.ack ? `<button class="sm ok" data-act="tourack" data-id="${step.id}">${step.end ? 'Finish tour' : 'Got it'}</button>` : ''}</div></div>`);
+  // bring target + card into view together
+  const c = $('.coach', app), top = Math.min(el.getBoundingClientRect().top, c.getBoundingClientRect().top), bot = Math.max(el.getBoundingClientRect().bottom, c.getBoundingClientRect().bottom);
+  if (top < 0 || bot > innerHeight) scrollBy(0, bot - top <= innerHeight ? (bot > innerHeight ? bot - innerHeight + 12 : top - 12) : top - 12);
 }
 const nav = h => { location.hash = h; };
 const footer = () => `<nav class="foot"><a href="#/splits">Splits</a><a href="#/history">History</a><a href="#/settings">Settings</a><a href="#/guide">Help</a></nav>`;

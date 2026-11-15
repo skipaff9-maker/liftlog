@@ -96,8 +96,8 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance:none; }
 .prog tr:last-child td { border-bottom:0; }
 .prog .up td { color:var(--done); font-weight:600; }
 .tour-hl { position:relative; z-index:10; border-radius:var(--r); box-shadow:0 0 0 3px var(--accent), 0 0 0 100vmax rgba(0,0,0,.6); }
-/* coach card always sits at the top, so it never covers the bottom Log it / Finish buttons */
-.coach { position:fixed; left:12px; right:12px; top:calc(12px + env(safe-area-inset-top)); max-width:496px; margin:0 auto; z-index:20; background:var(--ink); color:var(--bg); border-radius:var(--r); padding:14px 16px 6px; box-shadow:none; font-size:.95rem; }
+/* coach card sits in the page flow next to the highlighted element, so it never covers a button */
+.coach { position:relative; margin:12px 0; z-index:20; background:var(--ink); color:var(--bg); border-radius:var(--r); padding:14px 16px 6px; box-shadow:none; font-size:.95rem; }
 .coach p { margin:0 0 4px; }
 .coach-btns { display:flex; justify-content:space-between; align-items:center; }
 .coach .link { color:#B9B5A9; padding-left:0; text-align:left; }

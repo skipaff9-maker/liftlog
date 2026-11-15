@@ -1,5 +1,5 @@
 // Bump CACHE on every deploy so phones pick up the new version.
-const CACHE = 'liftlog-v5';
+const CACHE = 'liftlog-v6';
 const FILES = [
   './', 'index.html', 'app.js', 'styles.css', 'manifest.json', 'icon.svg',
   'fonts/barlow-latin-400-normal.woff2', 'fonts/barlow-latin-500-normal.woff2', 'fonts/barlow-latin-600-normal.woff2',
